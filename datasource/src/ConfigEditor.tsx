@@ -1,35 +1,35 @@
-import { LegacyForms } from '@grafana/ui';
-const { FormField, Switch } = LegacyForms;
-
-import React, { PureComponent, ChangeEvent } from 'react';
+import React, { ChangeEvent } from 'react';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { SecureSignalKDataSourceOptions, SignalKDataSourceOptions } from './types';
+import { InlineField, InlineSwitch, Input, SecretInput } from '@grafana/ui';
 
 interface Props extends DataSourcePluginOptionsEditorProps<SignalKDataSourceOptions, SecureSignalKDataSourceOptions> {}
 
-interface State {}
+export function ConfigEditor(props: Props) {
+  const { onOptionsChange, options } = props;
+  const { jsonData, secureJsonFields, secureJsonData } = options;
 
-export class ConfigEditor extends PureComponent<Props, State> {
-  onHostnameChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      hostname: event.target.value,
-    };
-    onOptionsChange({ ...options, jsonData });
+  const onHostnameChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        hostname: event.target.value,
+      },
+    });
   };
 
-  onSSLChange = (event: any) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      ssl: !!event.target.checked,
-    };
-    onOptionsChange({ ...options, jsonData });
+  const onSSLChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        ssl: !!event.target.value,
+      }
+    });
   }
 
-  onTokenChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
+  const onTokenChange = (event: ChangeEvent<HTMLInputElement>) => {
     onOptionsChange({
       ...options,
       secureJsonData: {
@@ -38,51 +38,63 @@ export class ConfigEditor extends PureComponent<Props, State> {
     });
   };
 
-  onUseAuthChange = (event: any) => {
-    const { onOptionsChange, options } = this.props;
-    const jsonData = {
-      ...options.jsonData,
-      useAuth: !!event.target.checked,
-    };
-    onOptionsChange({ ...options, jsonData });
+  const onTokenReset = () => {
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        token: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        token: '',
+      },
+    });
+  };
+
+  const onUseAuthChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        useAuth: !!event.target.value,
+      }
+    });
   }
 
-
-  render() {
-    const { options } = this.props;
-    const { jsonData, secureJsonData } = options;
-
-    return (
-      <div className="gf-form-group">
-        <div className="gf-form">
-          <Switch
-            label='SSL'
-            onChange={this.onSSLChange}
-            checked={!!jsonData.ssl}
-          />
-          <FormField
-            label="Server address"
-            labelWidth={10}
-            inputWidth={20}
-            onChange={this.onHostnameChange}
-            value={jsonData.hostname || ''}
-            placeholder="Signal K server hostname/ip address"
-          />
-          <Switch
-            label='Use Authentication'
-            onChange={this.onUseAuthChange}
-            checked={!!jsonData.useAuth}
-          />
-          <FormField
-            label="Authentication Token"
-            labelWidth={10}
-            inputWidth={20}
-            onChange={this.onTokenChange}
-            value={secureJsonData?.token ?? ''}
-            placeholder="Access token"
-          />
-        </div>
-      </div>
-    );
-  }
+  return (
+    <>
+      <InlineSwitch
+        label='SSL'
+        onChange={onSSLChange}
+        value={!!jsonData.ssl}
+      />
+      <InlineField label="Server address" labelWidth={10} interactive>
+        <Input
+          id="config-editor-hostname"
+          onChange={onHostnameChange}
+          value={jsonData.hostname}
+          placeholder="Signal K server hostname/ip address"
+          width={20}
+        />
+      </InlineField>
+      <InlineSwitch
+        label='Use authentication'
+        onChange={onUseAuthChange}
+        value={!!jsonData.useAuth}
+      />
+      <InlineField label="Authentication token" labelWidth={10} interactive>
+        <SecretInput
+          required
+          id="config-editor-auth-token"
+          isConfigured={secureJsonFields.token}
+          value={secureJsonData?.token}
+          placeholder="Access token"
+          width={20}
+          onReset={onTokenReset}
+          onChange={onTokenChange}
+        />
+      </InlineField>
+    </>
+  );
 }
